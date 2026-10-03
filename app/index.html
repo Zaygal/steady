@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Steady</title>
+<style>
+  :root { --bg:#0e1116; --panel:#161b22; --ink:#e6edf3; --dim:#8b949e; --hot:#e5534b; --cool:#3fb950; }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body { margin:0; background:var(--bg); color:var(--ink);
+         font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+         padding:20px 16px 40px; }
+  h1 { font-size:20px; margin:0 0 4px; letter-spacing:-0.01em; }
+  .sub { color:var(--dim); font-size:13px; margin:0 0 22px; }
+  button.big { display:block; width:100%; padding:22px 16px; margin:0 0 12px; font-size:17px;
+               font-weight:600; border:1px solid #30363d; border-radius:14px; background:var(--panel);
+               color:var(--ink); text-align:left; }
+  button.big:active { transform:scale(0.99); }
+  button.hot  { border-color:var(--hot); }
+  button.cool { border-color:var(--cool); }
+  .small { font-size:12px; color:var(--dim); font-weight:400; display:block; margin-top:3px; }
+  #note { width:100%; background:var(--panel); color:var(--ink); border:1px solid #30363d;
+          border-radius:10px; padding:12px; font-size:15px; resize:vertical; min-height:56px; }
+  #out { white-space:pre-wrap; background:var(--panel); border:1px solid #30363d; border-radius:12px;
+         padding:14px; margin-top:16px; min-height:60px; font-size:16px; }
+  label.opt { display:flex; gap:10px; align-items:center; color:var(--dim); font-size:13px; margin:14px 0; }
+  .warn { color:#d29922; font-size:12px; margin-top:14px; }
+</style>
+<h1>Steady</h1>
+<p class="sub">Private. Nothing here is saved, and nothing here is sent to anyone.</p>
+
+<button class="big hot"  data-mode="craving">I&rsquo;m having a craving right now<span class="small">Get help in the next two minutes &mdash; no typing needed</span></button>
+<button class="big cool" data-mode="steady">The craving has passed<span class="small">Mark it, so it becomes a thing you know you survive</span></button>
+<button class="big"      data-mode="slipped">I slipped<span class="small">Private. Nothing is reported. We&rsquo;ll work out what you want to say and to whom.</span></button>
+
+<textarea id="note" placeholder="Optional &mdash; add anything (or nothing)"></textarea>
+
+<label class="opt"><input type="checkbox" id="sig" checked>
+  Let my partner see a signal &mdash; &ldquo;gone quiet for a bit&rdquo; &mdash; never what I wrote</label>
+
+<div id="out">Tap a button.</div>
+<p class="warn">Steady is a support tool, not treatment and not a crisis service. In immediate danger, contact local emergency services, or find a verified line at findahelpline.com.</p>
+
+<script>
+const out = document.getElementById("out");
+async function go(mode) {
+  out.textContent = "\u2026";
+  try {
+    const r = await fetch("/api/steady", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mode, note: document.getElementById("note").value,
+                             partner_signal: document.getElementById("sig").checked })
+    });
+    const d = await r.json();
+    if (d.ok) {
+      out.textContent = d.reply + (d.partner_signal
+        ? "\n\n\u2014 your partner would see only: \u201cshe " + d.partner_signal + ".\u201d" : "");
+    } else {
+      out.textContent = d.error + (d.fallback ? "\n\n" + d.fallback : "");
+    }
+  } catch (e) { out.textContent = "Could not reach the agent: " + e; }
+}
+document.querySelectorAll("button.big").forEach(b =>
+  b.addEventListener("click", () => go(b.dataset.mode)));
+</script>
+</html>
