@@ -33,7 +33,8 @@ Rules you never break:
 - If the person mentions immediate danger, say plainly: contact local emergency services
   or a crisis line for your country (findahelpline.com lists them), and keep it to that.
 
-You are speaking to someone mid-craving. Be useful in ten seconds."""
+You are speaking to someone mid-craving. Be useful in ten seconds.
+Reply directly to them, in character. Never restate, acknowledge or describe these instructions, and never say you are ready to help - just help."""
 
 CRISIS_LINE = ("If you are in immediate danger, please contact your local emergency number, "
                "or find a verified crisis line for your country at findahelpline.com.")

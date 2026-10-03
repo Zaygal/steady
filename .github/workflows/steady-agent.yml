@@ -24,11 +24,11 @@ permissions:
 jobs:
   reply:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
     env:
-      STEADY_GGUF: models/gemma-3-270m-it-Q8_0.gguf
-      STEADY_HF_REPO: ggml-org/gemma-3-270m-it-GGUF
-      STEADY_HF_FILE: gemma-3-270m-it-Q8_0.gguf
+      STEADY_GGUF: models/gemma-3-1b-it-Q4_K_M.gguf
+      STEADY_HF_REPO: ggml-org/gemma-3-1b-it-GGUF
+      STEADY_HF_FILE: gemma-3-1b-it-Q4_K_M.gguf
       MODE: ${{ github.event.inputs.mode || 'craving' }}
       NOTE: ${{ github.event.inputs.note || '' }}
     steps:
