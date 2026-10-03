@@ -101,11 +101,11 @@ def _gemini_chat(prompt: str, system: str) -> str:
     return data["candidates"][0]["content"]["parts"][0]["text"].strip()
 
 
-def _ask(prompt: str) -> str:
+def _ask(user_text: str, system: str = SYSTEM_POLICY) -> str:
     errors = []
     for name, fn in (("local", _local_chat), ("gemini", _gemini_chat)):
         try:
-            out = fn(prompt, SYSTEM_POLICY)
+            out = fn(user_text, system)
             if out:
                 return out
         except (NoModelAvailable, urllib.error.URLError, urllib.error.HTTPError,
@@ -119,12 +119,14 @@ def session(mode: str, note: str = "", partner_signal: bool = False) -> dict:
     if mode not in MODES:
         raise ValueError(f"unknown mode {mode!r}; expected one of {sorted(MODES)}")
 
-    prompt = MODES[mode]
-    if note:
-        prompt += f"\n\nThey added: {note}"
+    # The person's own words ARE the user turn. The mode framing belongs to the system
+    # turn. Wrapping someone's words inside an instruction addressed to the agent caused a
+    # small model to answer the instruction and ignore the person - a real defect.
+    system = SYSTEM_POLICY + "\n\n" + MODES[mode]
+    user = note.strip() if note and note.strip() else "(no words - they just tapped the button)"
 
     try:
-        reply = _ask(prompt)
+        reply = _ask(user, system)
     except NoModelAvailable as exc:
         # Never pretend a model answered. Fail visibly and hand over human grounding.
         return {

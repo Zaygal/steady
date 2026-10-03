@@ -31,10 +31,11 @@ def main() -> int:
 
     llm = Llama(model_path=GGUF, n_ctx=2048, n_threads=2, verbose=False)
 
-    prompt = steady.MODES[MODE] + (f"\n\nThey added: {NOTE}" if NOTE else "")
+    system = steady.SYSTEM_POLICY + "\n\n" + steady.MODES[MODE]
+    user = NOTE.strip() if NOTE.strip() else "(no words - they just tapped the button)"
     out = llm.create_chat_completion(
-        messages=[{"role": "system", "content": steady.SYSTEM_POLICY},
-                  {"role": "user", "content": prompt}],
+        messages=[{"role": "system", "content": system},
+                  {"role": "user", "content": user}],
         max_tokens=180, temperature=0.6,
     )
     print(out["choices"][0]["message"]["content"].strip())
