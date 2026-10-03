@@ -1,0 +1,59 @@
+name: steady-agent
+
+# The open-weight model runs HERE, not on the author's machine.
+# That is the point: the support agent must not depend on the user's own hardware or
+# on a proprietary API, and CI gives a clean, reproducible place to run it.
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "craving | steady | slipped | partner"
+        required: true
+        default: "craving"
+      note:
+        description: "optional - anything the person typed"
+        required: false
+        default: ""
+  push:
+    branches: [main]
+    paths: ["agent/**", "tools/**"]
+
+permissions:
+  contents: read
+
+jobs:
+  reply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      STEADY_GGUF: models/gemma-3-270m-it-Q8_0.gguf
+      STEADY_HF_REPO: ggml-org/gemma-3-270m-it-GGUF
+      STEADY_HF_FILE: gemma-3-270m-it-Q8_0.gguf
+      MODE: ${{ github.event.inputs.mode || 'craving' }}
+      NOTE: ${{ github.event.inputs.note || '' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Fetch the open-weight Gemma GGUF (unofficial mirror is not used)
+        run: |
+          mkdir -p models
+          curl -sSL --fail --retry 3 -o "$STEADY_GGUF" \
+            "https://huggingface.co/$STEADY_HF_REPO/resolve/main/$STEADY_HF_FILE"
+          ls -lh "$STEADY_GGUF"
+          sha256sum "$STEADY_GGUF" | tee models/SHA256.txt
+
+      - name: Install the open-source llama.cpp runtime
+        run: pip install --quiet llama-cpp-python
+
+      - name: Run the Steady policy against the open-weight model
+        run: python tools/run_local.py | tee reply.txt
+
+      - name: Upload the reply as the run artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: steady-reply
+          path: reply.txt

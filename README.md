@@ -36,6 +36,25 @@ Two backends, both **open-weight** — there is no proprietary-model path in thi
 The support policy, the privacy inversion and the refusal to log are all in
 [`agent/steady.py`](agent/steady.py) — the open pieces are what makes it work.
 
+## Where the model actually runs
+
+The open-weight model is **not downloaded to the user's machine and not called through a
+proprietary API.** It runs in GitHub Actions, on a clean runner, from the workflow in
+[`.github/workflows/steady-agent.yml`](.github/workflows/steady-agent.yml):
+
+```bash
+gh workflow run steady-agent.yml -f mode=craving -f note="walked past the shop"
+gh run watch && gh run view --log
+```
+
+Model: **`gemma-3-270m-it` (Q8_0 GGUF)** from `ggml-org/gemma-3-270m-it-GGUF`, served by
+**`llama.cpp`**. The runner downloads it, checksums it, runs the policy and uploads the reply
+as an artifact — so the result is reproducible by anyone who clicks the workflow.
+
+**Honest tradeoff:** a CI round-trip takes tens of seconds, which is wrong for a 3am panic
+button. The workflow is the *reproducible proof* that the open-weight path works; the phone UI
+is what someone would actually press, pointed at a model they host themselves.
+
 ## Run it
 
 ```bash
