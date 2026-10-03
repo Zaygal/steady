@@ -64,6 +64,30 @@ Ask it for help with no model reachable and it does not improvise. It says so, a
 over a crisis pointer. I'd rather it be visibly broken than confidently wrong to someone
 mid-craving.
 
+
+### What I got wrong, in public
+
+I built the model path three times.
+
+`gemma-3-270m-it` — the smallest Gemma — **restated my instructions back at me** instead of
+answering: *"Okay, I understand. I will adhere to the rules and provide a concise, helpful
+response."* Funny, and useless to someone mid-craving. I moved up to 1B, then 4B.
+
+The 4B is warm and stays inside the policy. But I passed it *"walked past the shop and it hit
+hard"* and it never once mentioned the shop — every run, it offered breathing. I added an
+explicit rule that ignoring the person's own words counts as a failure, and I found a real
+interface bug behind it: **I had been burying the person's words inside a paragraph of
+instructions addressed to the agent.** Their sentence was a footnote in my message. I fixed
+that — their words are now the user turn and nothing else — and **the behaviour still didn't
+change.**
+
+I'm writing that down rather than leaving it out, because it's the honest cost of a model small
+enough to run for free, and it's the first thing I'd spend more compute on. Every one of those
+runs is public in the repo's Actions tab — you can watch me get it wrong.
+
+The upside is real though: the model runs in CI on an open runner, from an open-weight GGUF,
+served by `llama.cpp`, with **no API key and nothing installed on anyone's machine.**
+
 ### Honest limits
 
 It is **not treatment**, not therapy, not a crisis service. It cannot detect anything or

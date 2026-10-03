@@ -55,6 +55,23 @@ as an artifact — so the result is reproducible by anyone who clicks the workfl
 button. The workflow is the *reproducible proof* that the open-weight path works; the phone UI
 is what someone would actually press, pointed at a model they host themselves.
 
+## What the open-weight model actually does — real runs, all public
+
+Every reply below came out of a GitHub Actions run on this repository. None of it is a mock-up.
+
+| model | reply it produced |
+|---|---|
+| `gemma-3-270m-it` Q8_0 | *"Okay, I understand. I will adhere to the rules and provide a concise, helpful response..."* — it restated its own instructions instead of answering |
+| `gemma-3-1b-it` Q4_K_M | *"The urge is present. Focus on your breath. Slow down. Take a deep breath in, hold for three seconds, and exhale slowly."* |
+| `gemma-3-4b-it` Q4_K_M | *"That's alright. You're noticing the craving. Try a simple breathing exercise now. In for four, hold for four, out for six."* |
+| `gemma-3-4b-it` Q4_K_M, after fixing the prompt shape | *"The feeling is present. Try a slow, deep breath now. In for four, hold for four, out for six."* |
+
+**The honest finding.** Passed the note *"walked past the shop and it hit hard"*, **not one of these models used it.** They all default to a generic breathing exercise.
+
+I chased that properly rather than accepting it. I added an explicit policy rule ("use the detail they gave you; a generic exercise that ignores what they said is a failure"), and I fixed a genuine interface bug — the person's words had been appended to a paragraph of instructions *addressed to the agent*, so the person's own words were a footnote in someone else's message. They are now the user turn, where they belong. **The behaviour did not change.**
+
+So: a 4B open-weight model is warm, stays inside the support policy, and is genuinely useful on its own — **and it does not personalise.** That is the real cost of a model small enough to run free, it is the first thing more compute would fix, and it is written here instead of being quietly left out.
+
 ## Run it
 
 ```bash
