@@ -40,6 +40,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 str(payload.get("note") or "")[:500],
                 bool(payload.get("partner_signal")),
             )
+        except ValueError as exc:                      # bad input, not a server fault
+            return self._json(400, {"error": str(exc)})
         except Exception as exc:                       # pragma: no cover
             return self._json(500, {"error": f"{type(exc).__name__}: {exc}"})
         return self._json(200, out)
