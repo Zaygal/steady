@@ -47,6 +47,14 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return self._json(500, {"error": f"{type(exc).__name__}: {exc}"})
         return self._json(200, out)
 
+    def do_GET(self):
+        if self.path == "/api/models":
+            key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+            ids = steady.gemma_model_ids(key) if key else []
+            return self._json(200, {"open_weight_models": ids,
+                                    "in_use": steady._PICKED.get("model")})
+        return super().do_GET()
+
     def log_message(self, *args):
         pass
 

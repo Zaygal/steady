@@ -85,33 +85,54 @@ def _local_chat(prompt: str, system: str) -> str:
 
 
 _PICKED = {"model": None}          # remembered for the life of the process
+_HTTP_TIMEOUT = int(os.environ.get("STEADY_TIMEOUT", "100"))
 
 
-def _try_models(models, key: str, body: bytes):
-    """Try each model id. Returns (text, last_http_error)."""
+def _body(system: str, prompt: str, thinking_off: bool) -> bytes:
+    cfg = {"temperature": 0.6, "maxOutputTokens": 220}
+    if thinking_off:
+        # A person mid-craving needs the answer in seconds, not the model's reasoning.
+        cfg["thinkingConfig"] = {"thinkingBudget": 0}
+    return json.dumps({
+        "systemInstruction": {"parts": [{"text": system}]},
+        "contents": [{"role": "user", "parts": [{"text": prompt}]}],
+        "generationConfig": cfg,
+    }).encode()
+
+
+def _call(model: str, key: str, system: str, prompt: str):
+    """One model, thinking off then on. The key rides in a header, never the URL."""
+    url = ("https://generativelanguage.googleapis.com/v1beta/models/"
+           f"{model}:generateContent")
     last = None
-    for model in models:
-        # The key travels in a header, never in the URL, so it cannot leak into a log,
-        # a trace, or an error message shown to the person holding the phone.
-        url = ("https://generativelanguage.googleapis.com/v1beta/models/"
-               f"{model}:generateContent")
-        req = urllib.request.Request(url, data=body, headers={
-            "Content-Type": "application/json", "x-goog-api-key": key})
+    for thinking_off in (True, False):
+        req = urllib.request.Request(
+            url, data=_body(system, prompt, thinking_off),
+            headers={"Content-Type": "application/json", "x-goog-api-key": key})
         try:
-            with urllib.request.urlopen(req, timeout=60) as r:
+            with urllib.request.urlopen(req, timeout=_HTTP_TIMEOUT) as r:
                 data = json.loads(r.read())
             # A reasoning model returns its scratchpad as parts flagged thought:true.
             # Someone mid-craving must get the answer, never the reasoning behind it.
             parts = ((data.get("candidates") or [{}])[0].get("content") or {}).get("parts") or []
             text = "".join(str(x.get("text") or "") for x in parts
                            if not x.get("thought")).strip()
-            if not text:
-                last = None
-                continue
-            _PICKED["model"] = model
-            return text, None
+            if text:
+                _PICKED["model"] = model
+                return text, None
         except urllib.error.HTTPError as exc:
             last = exc
+        except (TimeoutError, OSError) as exc:
+            last = exc
+    return None, last
+
+
+def _try_models(models, key: str, system: str, prompt: str):
+    last = None
+    for model in models:
+        text, last = _call(model, key, system, prompt)
+        if text:
+            return text, None
     return None, last
 
 
@@ -120,11 +141,20 @@ def _gemma_available(key: str):
     req = urllib.request.Request(
         "https://generativelanguage.googleapis.com/v1beta/models",
         headers={"x-goog-api-key": key})
-    with urllib.request.urlopen(req, timeout=60) as r:
+    with urllib.request.urlopen(req, timeout=_HTTP_TIMEOUT) as r:
         models = json.loads(r.read()).get("models", [])
     return [m for m in models
             if "gemma" in (m.get("name") or "").lower()
             and "generateContent" in (m.get("supportedGenerationMethods") or [])]
+
+
+def gemma_model_ids(key: str):
+    """Public helper: the open-weight Gemma ids this key can reach, and which one we use."""
+    try:
+        ids = [(m.get("name") or "").split("/")[-1] for m in _gemma_available(key)]
+    except Exception:
+        return []
+    return [i for i in ids if i]
 
 
 def _gemini_chat(prompt: str, system: str) -> str:
@@ -133,29 +163,22 @@ def _gemini_chat(prompt: str, system: str) -> str:
     if not key:
         raise NoModelAvailable("no GEMINI_API_KEY")
 
-    body = json.dumps({
-        "systemInstruction": {"parts": [{"text": system}]},
-        "contents": [{"role": "user", "parts": [{"text": prompt}]}],
-        "generationConfig": {"temperature": 0.6, "maxOutputTokens": 220},
-    }).encode()
-
     # 1. whatever worked last time, then anything configured, then known public ids
     candidates = []
     if _PICKED["model"]:
         candidates.append(_PICKED["model"])
     candidates += [m.strip() for m in os.environ.get(
         "STEADY_MODEL", "gemma-3-27b-it,gemma-3-12b-it,gemma-3-4b-it").split(",") if m.strip()]
-    text, last = _try_models(candidates, key, body)
+    text, last = _try_models(candidates, key, system, prompt)
     if text:
         return text
 
     # 2. ask the API what this key can actually reach
     try:
-        found = _gemma_available(key)
+        found = [(m.get("name") or "").split("/")[-1] for m in _gemma_available(key)]
     except Exception:
         found = []
-    ids = [(m.get("name") or "").split("/")[-1] for m in found]
-    text, last2 = _try_models(ids, key, body)
+    text, last2 = _try_models([f for f in found if f], key, system, prompt)
     if text:
         return text
     if last2 is not None:
