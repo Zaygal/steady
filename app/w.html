@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="robots" content="noindex,nofollow">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Steady &mdash; for you</title>
+<style>
+  :root { --bg:#0e1116; --panel:#161b22; --ink:#e6edf3; --dim:#8b949e; --cool:#3fb950; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); min-height:100vh;
+         font:17px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+         padding:32px 22px; display:flex; flex-direction:column; justify-content:center; }
+  .k { color:var(--dim); font-size:12px; text-transform:uppercase; letter-spacing:0.09em; margin:0 0 10px; }
+  #sig { font-size:24px; font-weight:600; letter-spacing:-0.01em; margin:0; }
+  #when { color:var(--dim); font-size:13px; margin:10px 0 0; }
+  .rule { height:1px; background:#30363d; margin:30px 0; }
+  p.n { color:var(--dim); font-size:14px; margin:0 0 14px; }
+  p.n b { color:var(--ink); font-weight:600; }
+  .warn { color:#8b949e; font-size:12px; margin-top:28px; border-top:1px solid #21262d; padding-top:14px; }
+  .dot { display:inline-block; width:9px; height:9px; border-radius:50%; background:var(--cool);
+         margin-right:8px; vertical-align:middle; }
+</style>
+<p class="k">Steady &middot; the signal you asked to see</p>
+<p id="sig"><span class="dot"></span><span id="txt">checking&hellip;</span></p>
+<p id="when"></p>
+
+<div class="rule"></div>
+
+<p class="n">You will <b>never</b> see what she wrote. Not the words, not how bad it got, and
+not whether she slipped. That is not a limitation I ran out of time to build &mdash; it is the
+whole reason she can be honest with this thing.</p>
+<p class="n">This page only ever tells you <b>whether she checked in recently</b>. She chose
+to share it. She can stop at any time by not using the link.</p>
+
+<p class="warn">Steady is a support tool, not treatment and not a monitoring service. It cannot
+tell you she is in danger, and it is not a substitute for a conversation. If you are frightened
+and need someone for <i>you</i>, findahelpline.com lists verified lines by country.</p>
+
+<script>
+let fails = 0;
+async function tick() {
+  const code = location.pathname.split("/").filter(Boolean).pop();
+  try {
+    const r = await fetch("/api/w/" + encodeURIComponent(code), { cache: "no-store" });
+    const d = await r.json();
+    if (!r.ok) {
+      document.getElementById("txt").textContent = d.error || "This link is no longer active.";
+      document.getElementById("when").textContent = "";
+      document.querySelector(".dot").style.background = "#8b949e";
+      return;
+    }
+    document.getElementById("txt").textContent = "she " + d.signal + ".";
+    document.getElementById("when").textContent = d.minutes === null
+      ? "no check-in since she made this link"
+      : (d.minutes === 0 ? "just now"
+         : d.minutes + (d.minutes === 1 ? " minute ago" : " minutes ago"));
+    document.querySelector(".dot").style.background =
+      d.minutes === null ? "#8b949e" : (d.minutes < 45 ? "#3fb950" : "#d29922");
+    fails = 0;
+  } catch (e) {
+    if (++fails > 2) {
+      document.getElementById("txt").textContent = "Can\u2019t reach the server right now.";
+      document.getElementById("when").textContent = "";
+    }
+  }
+}
+tick();
+setInterval(tick, 20000);
+</script>
+</html>

@@ -22,11 +22,19 @@
           border-radius:10px; padding:12px; font-size:15px; resize:vertical; min-height:56px; }
   #out { white-space:pre-wrap; background:var(--panel); border:1px solid #30363d; border-radius:12px;
          padding:14px; margin-top:16px; min-height:60px; font-size:16px; }
-  label.opt { display:flex; gap:10px; align-items:center; color:var(--dim); font-size:13px; margin:14px 0; }
   .warn { color:#d29922; font-size:12px; margin-top:14px; }
+  .hold { margin-top:26px; border-top:1px solid #21262d; padding-top:16px; }
+  .hold h2 { font-size:14px; margin:0 0 6px; font-weight:600; }
+  .hold button { width:100%; padding:14px; font-size:15px; border-radius:12px; border:1px solid #30363d;
+                 background:var(--panel); color:var(--ink); text-align:left; }
+  code.link { display:block; word-break:break-all; background:#0b0e12; border:1px solid #30363d;
+              border-radius:8px; padding:10px; font-size:12px; color:#79c0ff; margin:10px 0 0; }
+  .seen { color:var(--dim); font-size:12px; margin:10px 0 0; }
 </style>
 <h1>Steady</h1>
-<p class="sub">Private. Nothing here is saved, and nothing here is sent to anyone.</p>
+<p class="sub">Private &mdash; nothing you write is saved, here or anywhere. On this hosted demo your
+words are sent to Google&rsquo;s endpoint to be answered; the local path keeps them on your device.
+Nothing about what you wrote is ever shown to anyone else.</p>
 
 <button class="big hot"  data-mode="craving">I&rsquo;m having a craving right now<span class="small">Get help in the next two minutes &mdash; no typing needed</span></button>
 <button class="big cool" data-mode="steady">The craving has passed<span class="small">Mark it, so it becomes a thing you know you survive</span></button>
@@ -34,10 +42,16 @@
 
 <textarea id="note" placeholder="Optional &mdash; add anything (or nothing)"></textarea>
 
-<label class="opt"><input type="checkbox" id="sig" checked>
-  Let my partner see a signal &mdash; &ldquo;gone quiet for a bit&rdquo; &mdash; never what I wrote</label>
-
 <div id="out">Tap a button.</div>
+
+<div class="hold">
+  <h2>Let someone hold this with you</h2>
+  <p class="small" id="holedesc">Give them a link. All they will ever see is whether you checked in
+  &mdash; never what you wrote, never how bad it got, and never whether you slipped.</p>
+  <button id="mk">Make a link for one person</button>
+  <div id="linkout"></div>
+</div>
+
 <p class="warn">Steady is a support tool, not treatment and not a crisis service. In immediate danger, contact local emergency services, or find a verified line at findahelpline.com.</p>
 
 <script>
@@ -45,6 +59,9 @@ const out = document.getElementById("out");
 const CRISIS = "If you are in immediate danger, contact your local emergency number, or find a "
              + "verified crisis line for your country at findahelpline.com.";
 let timer = null;
+const CODE_KEY = "steady.watchcode";
+let watchCode = null;
+try { watchCode = localStorage.getItem(CODE_KEY); } catch (e) { /* private mode */ }
 
 function waiting() {
   out.textContent = "Getting something for you\u2026";
@@ -59,12 +76,31 @@ function waiting() {
 async function send(mode) {
   const r = await fetch("/api/steady", {
     method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ mode, note: document.getElementById("note").value,
-                           partner_signal: document.getElementById("sig").checked })
+    body: JSON.stringify({ mode, note: document.getElementById("note").value })
   });
   const text = await r.text();
   try { return { status: r.status, d: JSON.parse(text) }; }
   catch (e) { return { status: r.status, d: null }; }   // 502 / timeout page, not our JSON
+}
+
+// She checks in. The ping carries the code and nothing else - no note, no mode, no words.
+async function ping() {
+  if (!watchCode) return;
+  try {
+    await fetch("/api/watch/ping", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code: watchCode })
+    });
+  } catch (e) { /* her turn must never fail because of this */ }
+}
+
+async function theirView() {
+  if (!watchCode) return null;
+  try {
+    const r = await fetch("/api/w/" + encodeURIComponent(watchCode), { cache: "no-store" });
+    const d = await r.json();
+    return r.ok ? d : null;
+  } catch (e) { return null; }
 }
 
 async function go(mode) {
@@ -81,18 +117,58 @@ async function go(mode) {
                       + "nothing you wrote was kept.\n\n" + CRISIS;
       return;
     }
-    if (d.ok) {
-      out.textContent = d.reply + (d.partner_signal
-        ? "\n\n\u2014 your partner would see only: \u201cshe " + d.partner_signal + ".\u201d" : "");
-    } else {
+    if (!d.ok) {
       out.textContent = d.error + (d.fallback ? "\n\n" + d.fallback : "");
+      return;
+    }
+    out.textContent = d.reply;
+
+    // "I slipped" never pings. A supporter must not be able to infer it from timing.
+    if (mode !== "slipped") {
+      await ping();
+      const v = await theirView();
+      if (v) out.textContent += "\n\n\u2014 what they see right now: \u201cshe " + v.signal + ".\u201d";
+    } else {
+      out.textContent += "\n\n\u2014 this one is not shared, and it does not change what they see.";
     }
   } catch (e) {
     clearTimeout(timer);
     out.textContent = "Could not reach the agent.\n\n" + CRISIS;
   }
 }
+
+function renderLink(code) {
+  const url = location.origin + "/w/" + code;
+  document.getElementById("linkout").innerHTML =
+    '<code class="link">' + url + "</code>" +
+    '<p class="seen">Send that to the one person you want to have it. It shows them a '
+    + "check-in time and nothing else.</p>";
+}
+
+document.getElementById("mk").addEventListener("click", async () => {
+  const btn = document.getElementById("mk");
+  btn.disabled = true; btn.textContent = "Making your link\u2026";
+  try {
+    const r = await fetch("/api/watch/new", {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: "{}"
+    });
+    const d = await r.json();
+    watchCode = d.code;
+    try { localStorage.setItem(CODE_KEY, d.code); } catch (e) { /* fine */ }
+    renderLink(d.code);
+    btn.textContent = "Make a new link instead";
+  } catch (e) {
+    btn.textContent = "Could not make a link. Try again.";
+  }
+  btn.disabled = false;
+});
+
 document.querySelectorAll("button.big").forEach(b =>
   b.addEventListener("click", () => go(b.dataset.mode)));
+
+if (watchCode) {
+  renderLink(watchCode);
+  document.getElementById("mk").textContent = "Make a new link instead";
+}
 </script>
 </html>
