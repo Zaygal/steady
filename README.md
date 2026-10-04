@@ -65,12 +65,22 @@ Every reply below came out of a GitHub Actions run on this repository. None of i
 | `gemma-3-1b-it` Q4_K_M | *"The urge is present. Focus on your breath. Slow down. Take a deep breath in, hold for three seconds, and exhale slowly."* |
 | `gemma-3-4b-it` Q4_K_M | *"That's alright. You're noticing the craving. Try a simple breathing exercise now. In for four, hold for four, out for six."* |
 | `gemma-3-4b-it` Q4_K_M, after fixing the prompt shape | *"The feeling is present. Try a slow, deep breath now. In for four, hold for four, out for six."* |
+| `gemma-3-12b-it` Q4_K_M | *"That smell is strong right now. Can you feel your feet on the ground?"* — **it used the trigger, then invented a smell she never mentioned** |
+| `gemma-3-12b-it` Q4_K_M + the accuracy rule | *"That walk brought it on strong. Feel your feet on the ground. Can you take three slow, deep breaths now?"* — **uses only her own words** |
 
-**The honest finding.** Passed the note *"walked past the shop and it hit hard"*, **not one of these models used it.** They all default to a generic breathing exercise.
+**The honest finding.** Passed the note *"walked past the shop and it hit hard"*, the small models
+never used it — they defaulted to a generic breathing exercise every time. Two prompt fixes
+changed nothing, because this was **capacity, not phrasing**: a 4B cannot hold the policy, her
+sentence, and a response that uses both.
 
-I chased that properly rather than accepting it. I added an explicit policy rule ("use the detail they gave you; a generic exercise that ignores what they said is a failure"), and I fixed a genuine interface bug — the person's words had been appended to a paragraph of instructions *addressed to the agent*, so the person's own words were a footnote in someone else's message. They are now the user turn, where they belong. **The behaviour did not change.**
+Moving to 12B fixed it, and then introduced something worse. The first 12B run answered the
+trigger correctly but said *"That smell is strong right now"* — **there was no smell.** It invented
+a sensory detail she never gave and handed it to someone in distress as fact. A rule that it may
+use only the details she actually gave stopped it.
 
-So: a 4B open-weight model is warm, stays inside the support policy, and is genuinely useful on its own — **and it does not personalise.** That is the real cost of a model small enough to run free, it is the first thing more compute would fix, and it is written here instead of being quietly left out.
+That is the real lesson of this repo, and it is not "use a bigger model": **every step up the
+ladder bought capability and sold a little accuracy, and accuracy is the only thing that matters
+here.**
 
 ## Run it
 

@@ -77,22 +77,33 @@ and every slip so it could win a storage prize would be the exact thing it exist
 
 ## What I got wrong, in public
 
-I built the model path three times.
+I built the model path four times, and the last failure was the most useful one.
 
 `gemma-3-270m-it` — the smallest Gemma — **restated my instructions back at me** instead of
 answering: *"Okay, I understand. I will adhere to the rules and provide a concise, helpful
-response."* Funny, and useless to someone mid-craving. So I moved to 1B, then 4B.
+response."* Useless to someone mid-craving. I moved to 1B, then 4B.
 
-The 4B is warm and stays inside the policy. But I passed it *"walked past the shop and it hit
-hard"*, and it never once mentioned the shop — every run, it offered breathing. I added an
-explicit rule that ignoring the person's own words counts as a failure, and then I found a real
-interface bug behind it: **I had been burying her words inside a paragraph of instructions
-addressed to the agent.** Her sentence was a footnote in my message. I fixed that — her words
-are now the user turn and nothing else — and **the behaviour still didn't change.**
+The 4B was warm and stayed inside the policy, **and it ignored her completely.** I passed it
+*"walked past the shop and it hit hard"* and it never once mentioned the shop — every run it
+offered breathing. I added a rule that ignoring what she said counts as a failure, and found a
+real interface bug behind it: **I had been burying her words inside a paragraph of instructions
+addressed to the agent.** Her sentence was a footnote in my message. I fixed that — her words are
+now the user turn and nothing else — and **the behaviour still didn't change.**
 
-I'm writing that down instead of leaving it out, because it's the honest cost of a model small
-enough to run for free, and it's the first thing I'd spend more compute on. Every one of those
-runs is public in the repo's Actions tab. You can watch me get it wrong.
+That's when I stopped blaming the prompt and admitted it was capacity. A 4B model doesn't have
+the room to hold the policy, her sentence, and a reply that uses both. So I moved to 12B:
+
+> *"That walk brought it on strong. Feel your feet on the ground. Can you take three slow, deep
+> breaths now?"* — using **her** word, from **her** sentence.
+
+And then the bigger model did something worse. On its first run, given the same note, it said
+*"That smell is strong right now."* **There was no smell.** It invented a sensory detail she never
+gave and handed it to someone in distress as fact. So I added a rule that it may use only what
+she actually said, and it stopped.
+
+**Every step up the ladder bought capability and sold a little accuracy — and accuracy is the only
+thing that matters here.** All four runs are public in the repo's Actions tab, failures included.
+You can watch me get it wrong, watch the model invent something, and watch me take it back out.
 
 ## Honest limits
 
