@@ -84,22 +84,38 @@ def _local_chat(prompt: str, system: str) -> str:
 
 
 def _gemini_chat(prompt: str, system: str) -> str:
-    """Google AI Studio, served open-weight Gemma."""
+    """Google AI Studio, serving open-weight Gemma.
+
+    The key travels in a header, never in the URL, so it cannot leak into logs, traces or
+    an error message. If the first Gemma size is not available to this key's tier we walk
+    down the list rather than failing the person holding the phone.
+    """
     key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
     if not key:
         raise NoModelAvailable("no GEMINI_API_KEY")
-    model = os.environ.get("STEADY_MODEL", "gemma-3-27b-it")
-    url = ("https://generativelanguage.googleapis.com/v1beta/models/"
-           f"{model}:generateContent?key={key}")
+    models = [m.strip() for m in os.environ.get(
+        "STEADY_MODEL", "gemma-3-27b-it,gemma-3-12b-it,gemma-3-4b-it,gemma-3-1b-it"
+    ).split(",") if m.strip()]
     body = json.dumps({
         "systemInstruction": {"parts": [{"text": system}]},
         "contents": [{"role": "user", "parts": [{"text": prompt}]}],
         "generationConfig": {"temperature": 0.6, "maxOutputTokens": 220},
     }).encode()
-    req = urllib.request.Request(url, data=body, headers={"Content-Type": "application/json"})
-    with urllib.request.urlopen(req, timeout=60) as r:
-        data = json.loads(r.read())
-    return data["candidates"][0]["content"]["parts"][0]["text"].strip()
+    last = None
+    for model in models:
+        url = ("https://generativelanguage.googleapis.com/v1beta/models/"
+               f"{model}:generateContent")
+        req = urllib.request.Request(url, data=body, headers={
+            "Content-Type": "application/json", "x-goog-api-key": key})
+        try:
+            with urllib.request.urlopen(req, timeout=60) as r:
+                data = json.loads(r.read())
+            return data["candidates"][0]["content"]["parts"][0]["text"].strip()
+        except urllib.error.HTTPError as exc:
+            last = exc
+    if last is not None:
+        raise last
+    raise NoModelAvailable("gemini: no model responded")
 
 
 def _ask(user_text: str, system: str = SYSTEM_POLICY) -> str:
@@ -111,7 +127,14 @@ def _ask(user_text: str, system: str = SYSTEM_POLICY) -> str:
                 return out
         except (NoModelAvailable, urllib.error.URLError, urllib.error.HTTPError,
                 KeyError, IndexError, TimeoutError, OSError) as exc:
-            errors.append(f"{name}: {type(exc).__name__}")
+            if isinstance(exc, urllib.error.HTTPError):
+                try:
+                    why = exc.read().decode("utf-8", "replace")[:180]
+                except Exception:
+                    why = ""
+                errors.append(f"{name}: HTTP {exc.code} {why}".strip())
+            else:
+                errors.append(f"{name}: {type(exc).__name__}")
     raise NoModelAvailable("; ".join(errors) or "no backend")
 
 
