@@ -89,7 +89,9 @@ _HTTP_TIMEOUT = int(os.environ.get("STEADY_TIMEOUT", "100"))
 
 
 def _body(system: str, prompt: str, thinking_off: bool) -> bytes:
-    cfg = {"temperature": 0.6, "maxOutputTokens": 220}
+    # Thinking models spend tokens on reasoning BEFORE the answer. Too small a budget
+    # leaves zero room for the reply, which looks like an empty response.
+    cfg = {"temperature": 0.6, "maxOutputTokens": 2048}
     if thinking_off:
         # A person mid-craving needs the answer in seconds, not the model's reasoning.
         cfg["thinkingConfig"] = {"thinkingBudget": 0}
@@ -120,6 +122,7 @@ def _call(model: str, key: str, system: str, prompt: str):
             if text:
                 _PICKED["model"] = model
                 return text, None
+            last = RuntimeError("empty response - no answer part")
         except urllib.error.HTTPError as exc:
             last = exc
         except (TimeoutError, OSError) as exc:
