@@ -6,6 +6,10 @@ is surveillance, and the moment honesty costs something, honesty stops. Which le
 off than when you started, because now the person you were trying to help has to manage your
 feelings on top of their own.
 
+This is my entry for the **Hacktoberfest Weekend Challenge**. The prompt is *open-source AI at
+its core* — an open-weight model, an open-source harness, or local inference. The theme is
+**Build for a Friend**: pick one real person and build something for them.
+
 I built this for one real person: someone close to me who is getting through this, and I'm the
 person closest to it. I'm deliberately not describing her, and not describing the specifics.
 That's her information, and a repo is permanent.
@@ -56,6 +60,20 @@ about a slip.
 
 Ask it for help with no model reachable and it does not improvise — it says so and hands over a
 crisis pointer. I'd rather it be visibly broken than confidently wrong to someone mid-craving.
+
+## Prize Categories
+
+**Best Use of Gemma — featured.** Steady's model is Gemma, open-weight, and there is no
+proprietary-model path anywhere in the code. It runs as an official Gemma GGUF served by
+`llama.cpp`, fetched and checksummed by the workflow on every run.
+
+**Best Use of GitHub Copilot — partner.** The qualifying path here is *"automate your project
+with GitHub Actions,"* and for Steady that isn't a garnish: the entire model runtime **is** a
+GitHub Actions workflow. Nothing runs on anyone's machine, and every run is public.
+
+There is one family of categories Steady is built to lose — the data-layer ones (MongoDB Atlas,
+Tiger Data). **Not keeping the data is the product.** A version of this that stored every craving
+and every slip so it could win a storage prize would be the exact thing it exists to avoid.
 
 ## What I got wrong, in public
 
