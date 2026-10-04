@@ -56,14 +56,14 @@ button is worth nothing. **Privacy wasn't the ethical tax on this project. It's 
 Live at **https://steady-21e1.onrender.com** — open it on a phone. Type something, or nothing, and
 tap a button.
 
-![Steady answering with her own words, and the signal her partner would see instead of a transcript](https://raw.githubusercontent.com/Zaygal/steady/main/docs/demo-2-reply.png)
+![Steady answering with her own words](https://raw.githubusercontent.com/Zaygal/steady/main/docs/demo-2-reply.png)
 
 That screenshot is a real reply, word for word:
 
-> *"Walking past that shop is a lot to handle. Can you try to name five things you can see right
-> now to help ground yourself?"*
+> *"That shop brought on a powerful wave. Try focusing on your feet on the ground for a moment.
+> Can you name three things you see around you right now?"*
 >
-> — your partner would see only: *"she has gone quiet for a bit."*
+> — what he sees right now: *"she checked in recently."*
 
 That second line is the entire design on one screen. She gets the help. He gets a signal with no
 content in it. Nobody had to decide whether to be honest.

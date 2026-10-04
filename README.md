@@ -57,6 +57,37 @@ latency is the model's, not the box's. Far too slow to be a real 3am button, whi
 the product runs a small non-reasoning model on your own device.
 
 
+## The partner connection
+
+The point of Steady is a relationship, not a solo app, so there are two screens:
+
+- **`/`** - her side: three buttons, an optional note, and *"make a link for one person"*.
+- **`/w/<code>`** - his side: a state line and a time. No buttons, no notes, no history.
+
+What the server stores per link is **one float**: the epoch of her last check-in.
+
+```
+_WATCH[code] = time.time()      # and nothing else, ever
+```
+
+The supporter's phone receives exactly two fields - `signal` and `minutes` - derived from that
+timestamp and nothing more:
+
+| her last check-in | what he sees |
+|---|---|
+| never (link made, unused) | *hasn't checked in yet* |
+| under 45 min | *checked in recently* |
+| under 6 h | *has gone quiet for a bit* |
+| longer | *hasn't been back today* |
+
+**The slip button never pings at all** - not even a timestamp. Otherwise "checked in" versus "gone
+quiet" would start to mean something, and the moment a supporter can infer a slip from timing, the
+one button people lie to is dead. `index.html` only pings for `craving` and `steady`.
+
+The store is in memory on purpose: nothing is written to disk, so there is no log to leak, subpoena
+or read over a shoulder. A restart forgets every pairing, and a dead link says so plainly instead
+of pretending.
+
 ## The fine-tuning experiment that failed (and is reported anyway)
 
 I tried to *teach* a small model to use the person's own words, and measured it properly.
