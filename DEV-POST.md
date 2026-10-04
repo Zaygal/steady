@@ -208,6 +208,10 @@ anything or measure anything, and it doesn't replace a professional. If someone 
 danger they should contact local emergency services, or find a verified crisis line for their
 country at findahelpline.com.
 
+**The supporter's view is pull, not push** — he opens the link to see it. Nothing is texted or
+emailed to him, and no notification fires. That is the honest edge of what I built: the signal
+is real and delivered, but he has to look.
+
 The instance is always-on, so there is no cold start. The workflow is the reproducible proof that
 the open-weight path works; the phone UI is what someone would actually press, pointed at a model
 they host themselves.
