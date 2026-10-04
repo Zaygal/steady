@@ -42,22 +42,55 @@
 
 <script>
 const out = document.getElementById("out");
+const CRISIS = "If you are in immediate danger, contact your local emergency number, or find a "
+             + "verified crisis line for your country at findahelpline.com.";
+let timer = null;
+
+function waiting() {
+  out.textContent = "Getting something for you\u2026";
+  out.style.color = "";
+  clearTimeout(timer);
+  // A long silence is its own kind of harm. Say how long this actually takes.
+  timer = setTimeout(() => {
+    out.textContent = "Still going. On the free demo this can take a minute \u2014 hold on.";
+  }, 10000);
+}
+
+async function send(mode) {
+  const r = await fetch("/api/steady", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ mode, note: document.getElementById("note").value,
+                           partner_signal: document.getElementById("sig").checked })
+  });
+  const text = await r.text();
+  try { return { status: r.status, d: JSON.parse(text) }; }
+  catch (e) { return { status: r.status, d: null }; }   // 502 / timeout page, not our JSON
+}
+
 async function go(mode) {
-  out.textContent = "\u2026";
+  waiting();
   try {
-    const r = await fetch("/api/steady", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ mode, note: document.getElementById("note").value,
-                             partner_signal: document.getElementById("sig").checked })
-    });
-    const d = await r.json();
+    let { d } = await send(mode);
+    if (!d) {                                  // the free instance can 502 mid-wake
+      out.textContent = "The agent is waking up. Trying once more\u2026";
+      ({ d } = await send(mode));
+    }
+    clearTimeout(timer);
+    if (!d) {
+      out.textContent = "The agent is not answering right now. That is not your fault, and "
+                      + "nothing you wrote was kept.\n\n" + CRISIS;
+      return;
+    }
     if (d.ok) {
       out.textContent = d.reply + (d.partner_signal
         ? "\n\n\u2014 your partner would see only: \u201cshe " + d.partner_signal + ".\u201d" : "");
     } else {
       out.textContent = d.error + (d.fallback ? "\n\n" + d.fallback : "");
     }
-  } catch (e) { out.textContent = "Could not reach the agent: " + e; }
+  } catch (e) {
+    clearTimeout(timer);
+    out.textContent = "Could not reach the agent.\n\n" + CRISIS;
+  }
 }
 document.querySelectorAll("button.big").forEach(b =>
   b.addEventListener("click", () => go(b.dataset.mode)));
