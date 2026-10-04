@@ -29,9 +29,19 @@ That's her information, and a repo is permanent.
 
 But the thing I actually built is an absence.
 
-**The person supporting you gets a signal, never a transcript.** If she turns it on, all I would
-ever see is something like *"she's gone quiet for a bit."* Never what she wrote, never how bad it
-got, never whether she slipped.
+**The person supporting you gets a signal, never a transcript — and that part is built, not
+described.** She taps *"make a link for one person"* and hands it to whoever she chooses. On his
+phone it is a different page: a state line — *"she has gone quiet for a bit"* — and nothing else.
+No buttons, no notes, no history, no transcript to scroll.
+
+The only thing the server ever holds per link is **the time of her last check-in.** Not her words,
+not which button she pressed, not a count of anything. I checked what a supporter's phone actually
+receives: two fields, `signal` and `minutes`. There is no third field, and there is nowhere to put
+one without deleting this paragraph.
+
+And **the slip button deliberately never reports at all** — not even a timestamp. If it did, then
+"checked in" and "gone quiet" would start to *mean* something, and the moment a supporter can infer
+a slip from timing, the honest button is dead.
 
 **Steady keeps no session log.** Not "we don't look at it" — there is nothing to look at. A tool
 that recorded this would be used dishonestly within a week, because that is what people do when
@@ -57,6 +67,12 @@ That screenshot is a real reply, word for word:
 
 That second line is the entire design on one screen. She gets the help. He gets a signal with no
 content in it. Nobody had to decide whether to be honest.
+
+![The supporter's own page: a state line, a time, and no buttons](https://raw.githubusercontent.com/Zaygal/steady/main/docs/demo-3-supporter.png)
+
+That is the whole of what he ever sees. Open the link on a second phone and you can watch it
+change when she taps a button — it is a different page, for a different person, serving a
+different payload. Nothing about that screen is a mockup.
 
 **Honest performance note:** a reply typically takes **30–60 seconds**, because Gemma 4 reasons before it
 answers. The service is always-on, so there is no cold start, and the model is warmed at boot —
