@@ -41,11 +41,22 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Fetch the open-weight Gemma GGUF (unofficial mirror is not used)
+      - name: Cache the open-weight model (7.3 GB - download it once, not every run)
+        id: gguf
+        uses: actions/cache@v4
+        with:
+          path: models
+          key: gguf-${{ env.STEADY_HF_FILE }}
+
+      - name: Fetch the open-weight Gemma GGUF (official ggml-org repo only)
         run: |
           mkdir -p models
-          curl -sSL --fail --retry 3 -o "$STEADY_GGUF" \
-            "https://huggingface.co/$STEADY_HF_REPO/resolve/main/$STEADY_HF_FILE"
+          if [ -s "$STEADY_GGUF" ]; then
+            echo "cache hit - reusing the model already on the runner"
+          else
+            curl -sSL --fail --retry 3 -o "$STEADY_GGUF" \
+              "https://huggingface.co/$STEADY_HF_REPO/resolve/main/$STEADY_HF_FILE"
+          fi
           ls -lh "$STEADY_GGUF"
           sha256sum "$STEADY_GGUF" | tee models/SHA256.txt
 
