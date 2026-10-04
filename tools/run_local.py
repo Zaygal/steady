@@ -29,7 +29,7 @@ def main() -> int:
 
     from llama_cpp import Llama
 
-    llm = Llama(model_path=GGUF, n_ctx=2048, n_threads=2, verbose=False)
+    llm = Llama(model_path=GGUF, n_ctx=4096, n_threads=(os.cpu_count() or 2), verbose=False)
 
     system = steady.SYSTEM_POLICY + "\n\n" + steady.MODES[MODE]
     user = NOTE.strip() if NOTE.strip() else "(no words - they just tapped the button)"
