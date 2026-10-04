@@ -159,6 +159,20 @@ And then the bigger model did something worse. On its first run, given the same 
 gave and handed it to someone in distress as fact. So I added a rule that it may use only what she
 actually said, and it stopped.
 
+**Then I tried to fix it with a fine-tune, and that failed too.** I trained a LoRA adapter on
+1,800 synthetic examples and compared it against the same model untuned, on a held-out set, against
+one metric I fixed *before* running it: does the reply reuse a content word from the person's note?
+
+> baseline **68.3%** → fine-tuned **60.0%**, for $1.11
+
+It made it worse. So there is no "Best Use of Tinker" claim anywhere in this post — I'm not going to
+go shopping for a metric that flatters my own adapter. What the samples actually show is that my
+*metric* was the weak part: the baseline learned to parrot her sentence straight back, which
+guarantees word overlap and reads like a machine, while the fine-tuned model used the exact noun the
+baseline had paraphrased away. Two real lessons: the defect I'd documented was the **4B's capacity
+limit, not a universal problem** — a 30B model already used the detail 68% of the time — and my
+synthetic data was too mechanical to beat that.
+
 **Every step up the ladder bought capability and sold a little accuracy — and accuracy is the only
 thing that matters here.** All four runs are public. You can watch me get it wrong, watch the model
 invent something, and watch me take it back out.

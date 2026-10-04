@@ -59,6 +59,30 @@ the CI workflow in this repo is the reproducible proof that path works.
 
 Free instances also sleep after ~15 minutes idle, so the first click can take up to a minute to wake.
 
+
+## The fine-tuning experiment that failed (and is reported anyway)
+
+I tried to *teach* a small model to use the person's own words, and measured it properly.
+
+- Base model: `nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B` (LoRA, rank 32, 3 epochs)
+- Data: 1,800 synthetic examples generated from templates, 200 held out and never trained on
+- Metric, fixed **before** the run: does the reply reuse a content word from the person's note?
+- Cost: **$1.11** (841,456 train tokens/epoch)
+
+```
+used_detail:  baseline 68.3%  ->  fine-tuned 60.0%
+```
+
+**It got worse.** So there is no "Best Use of Tinker" claim in this project. What the samples show
+is that the metric itself is weak: the baseline learned to *parrot* the person's sentence back
+("You're at a match and everyone around you is drinking"), which guarantees lexical overlap and
+reads like a machine. The fine-tuned model actually used the **exact** noun the baseline had
+paraphrased away ("the off-licence" vs "the shop") and wrote shorter, more concrete replies.
+
+I am not swapping the metric to one that flatters my adapter. The honest summary is: the failure I
+originally documented was the **4B's capacity limit**, not a universal problem - a 30B model already
+used the detail 68% of the time - and my synthetic data was too mechanical to improve on that.
+
 ## Where the model actually runs
 
 The open-weight model is **not downloaded to the user's machine and not called through a
