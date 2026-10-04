@@ -83,26 +83,15 @@ def _local_chat(prompt: str, system: str) -> str:
     return data["choices"][0]["message"]["content"].strip()
 
 
-def _gemini_chat(prompt: str, system: str) -> str:
-    """Google AI Studio, serving open-weight Gemma.
+_PICKED = {"model": None}          # remembered for the life of the process
 
-    The key travels in a header, never in the URL, so it cannot leak into logs, traces or
-    an error message. If the first Gemma size is not available to this key's tier we walk
-    down the list rather than failing the person holding the phone.
-    """
-    key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
-    if not key:
-        raise NoModelAvailable("no GEMINI_API_KEY")
-    models = [m.strip() for m in os.environ.get(
-        "STEADY_MODEL", "gemma-3-27b-it,gemma-3-12b-it,gemma-3-4b-it,gemma-3-1b-it"
-    ).split(",") if m.strip()]
-    body = json.dumps({
-        "systemInstruction": {"parts": [{"text": system}]},
-        "contents": [{"role": "user", "parts": [{"text": prompt}]}],
-        "generationConfig": {"temperature": 0.6, "maxOutputTokens": 220},
-    }).encode()
+
+def _try_models(models, key: str, body: bytes):
+    """Try each model id. Returns (text, last_http_error)."""
     last = None
     for model in models:
+        # The key travels in a header, never in the URL, so it cannot leak into a log,
+        # a trace, or an error message shown to the person holding the phone.
         url = ("https://generativelanguage.googleapis.com/v1beta/models/"
                f"{model}:generateContent")
         req = urllib.request.Request(url, data=body, headers={
@@ -110,12 +99,63 @@ def _gemini_chat(prompt: str, system: str) -> str:
         try:
             with urllib.request.urlopen(req, timeout=60) as r:
                 data = json.loads(r.read())
-            return data["candidates"][0]["content"]["parts"][0]["text"].strip()
+            _PICKED["model"] = model
+            return data["candidates"][0]["content"]["parts"][0]["text"].strip(), None
         except urllib.error.HTTPError as exc:
             last = exc
-    if last is not None:
-        raise last
-    raise NoModelAvailable("gemini: no model responded")
+    return None, last
+
+
+def _gemma_available(key: str):
+    """Ask the API which Gemma models this key can actually call, rather than guessing ids."""
+    req = urllib.request.Request(
+        "https://generativelanguage.googleapis.com/v1beta/models",
+        headers={"x-goog-api-key": key})
+    with urllib.request.urlopen(req, timeout=60) as r:
+        models = json.loads(r.read()).get("models", [])
+    return [m for m in models
+            if "gemma" in (m.get("name") or "").lower()
+            and "generateContent" in (m.get("supportedGenerationMethods") or [])]
+
+
+def _gemini_chat(prompt: str, system: str) -> str:
+    """Google AI Studio, serving open-weight Gemma."""
+    key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+    if not key:
+        raise NoModelAvailable("no GEMINI_API_KEY")
+
+    body = json.dumps({
+        "systemInstruction": {"parts": [{"text": system}]},
+        "contents": [{"role": "user", "parts": [{"text": prompt}]}],
+        "generationConfig": {"temperature": 0.6, "maxOutputTokens": 220},
+    }).encode()
+
+    # 1. whatever worked last time, then anything configured, then known public ids
+    candidates = []
+    if _PICKED["model"]:
+        candidates.append(_PICKED["model"])
+    candidates += [m.strip() for m in os.environ.get(
+        "STEADY_MODEL", "gemma-3-27b-it,gemma-3-12b-it,gemma-3-4b-it").split(",") if m.strip()]
+    text, last = _try_models(candidates, key, body)
+    if text:
+        return text
+
+    # 2. ask the API what this key can actually reach
+    try:
+        found = _gemma_available(key)
+    except Exception:
+        found = []
+    ids = [(m.get("name") or "").split("/")[-1] for m in found]
+    text, last2 = _try_models(ids, key, body)
+    if text:
+        return text
+    if last2 is not None:
+        last = last2
+
+    if not found:
+        raise NoModelAvailable(
+            "gemini: this key cannot reach any Gemma model that supports generateContent")
+    raise last if last is not None else NoModelAvailable("gemini: no model responded")
 
 
 def _ask(user_text: str, system: str = SYSTEM_POLICY) -> str:
