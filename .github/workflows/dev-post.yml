@@ -41,8 +41,12 @@ jobs:
           sleep 3
           python3 - <<'PY'
           import json, urllib.request, os, re
-          with urllib.request.urlopen(
-                  "https://dev.to/api/articles/" + os.environ["ARTICLE_ID"], timeout=60) as r:
+          # dev.to answers a default urllib user-agent with "403 Forbidden Bots"
+          req = urllib.request.Request(
+              "https://dev.to/api/articles/" + os.environ["ARTICLE_ID"],
+              headers={"User-Agent": "steady-dev-push",
+                       "Accept": "application/vnd.forem.api-v1+json"})
+          with urllib.request.urlopen(req, timeout=60) as r:
               d = json.loads(r.read())
           h = d.get("body_html") or ""
           print("title :", d.get("title"))
