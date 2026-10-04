@@ -1,0 +1,2 @@
+# Steady is stdlib-only. There is no third-party runtime dependency, by design:
+# a support tool for someone in crisis should have the smallest possible attack surface.

@@ -11,7 +11,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, "..", "agent"))
 import steady  # noqa: E402
 
-PORT = int(os.environ.get("STEADY_PORT", "8765"))
+# Render (and most PaaS) inject PORT. Fall back to STEADY_PORT for local runs.
+PORT = int(os.environ.get("PORT") or os.environ.get("STEADY_PORT") or 8765)
 
 
 class Handler(http.server.SimpleHTTPRequestHandler):
@@ -52,6 +53,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
 if __name__ == "__main__":
     socketserver.TCPServer.allow_reuse_address = True
-    with socketserver.TCPServer(("", PORT), Handler) as httpd:
+    # threaded: a single-threaded server stalls when a phone holds a connection open
+    with http.server.ThreadingHTTPServer(("", PORT), Handler) as httpd:
         print(f"Steady listening on http://0.0.0.0:{PORT}  (open that on your phone)")
         httpd.serve_forever()
