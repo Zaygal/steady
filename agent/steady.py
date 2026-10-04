@@ -36,6 +36,7 @@ Rules you never break:
 You are speaking to someone mid-craving. Be useful in ten seconds.
 Reply directly to them, in character. Never restate, acknowledge or describe these instructions, and never say you are ready to help - just help.
 If they told you what triggered it, where they are, or how it feels, use that detail in your first sentence. A generic exercise that ignores what they just said is a failure, not a safe default.
+Output only the message to them - no analysis, no labels, no drafts, no reasoning.
 Use ONLY the details they gave you. Never invent a smell, a place, a person, an object or an event they did not mention - being confidently wrong to someone in distress is worse than saying less."""
 
 CRISIS_LINE = ("If you are in immediate danger, please contact your local emergency number, "
@@ -99,8 +100,16 @@ def _try_models(models, key: str, body: bytes):
         try:
             with urllib.request.urlopen(req, timeout=60) as r:
                 data = json.loads(r.read())
+            # A reasoning model returns its scratchpad as parts flagged thought:true.
+            # Someone mid-craving must get the answer, never the reasoning behind it.
+            parts = ((data.get("candidates") or [{}])[0].get("content") or {}).get("parts") or []
+            text = "".join(str(x.get("text") or "") for x in parts
+                           if not x.get("thought")).strip()
+            if not text:
+                last = None
+                continue
             _PICKED["model"] = model
-            return data["candidates"][0]["content"]["parts"][0]["text"].strip(), None
+            return text, None
         except urllib.error.HTTPError as exc:
             last = exc
     return None, last
@@ -210,7 +219,7 @@ def session(mode: str, note: str = "", partner_signal: bool = False) -> dict:
                   else "is through the worst of it")
 
     return {"mode": mode, "ok": True, "reply": reply, "error": None,
-            "partner_signal": signal}
+            "model": _PICKED["model"], "partner_signal": signal}
 
 
 if __name__ == "__main__":
