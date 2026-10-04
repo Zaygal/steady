@@ -1,0 +1,58 @@
+name: tinker-sft
+
+# Fine-tune a small OPEN-WEIGHT model to use the detail the person actually gave, then show a
+# baseline-vs-fine-tuned comparison. Tinker's client is CPU-only (all GPU work is remote), so
+# this belongs in CI next to the other model runs - reproducible, and nothing on anyone's disk.
+#
+# Needs one repository secret: TINKER_API_KEY. If it is absent the job refuses to run rather
+# than faking a result.
+on:
+  workflow_dispatch:
+    inputs:
+      epochs:
+        description: "training epochs"
+        required: true
+        default: "3"
+
+permissions:
+  contents: read
+
+jobs:
+  sft:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      TINKER_API_KEY: ${{ secrets.TINKER_API_KEY }}
+      TINKER_EPOCHS: ${{ github.event.inputs.epochs || '3' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Refuse to run without the key
+        run: |
+          if [ -z "$TINKER_API_KEY" ]; then
+            echo "TINKER_API_KEY secret is not set on this repository - stopping." >&2
+            echo "Add it under Settings > Secrets and variables > Actions." >&2
+            exit 1
+          fi
+
+      - name: Install the client
+        run: pip install --quiet tinker numpy
+
+      - name: Build the synthetic SFT set (no real person's words in it)
+        run: python tinker/dataset.py
+
+      - name: Fine-tune, then compare against the same model untuned
+        run: python tinker/run_sft.py | tee tinker/run.log
+
+      - name: Upload the numbers
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tinker-report
+          path: |
+            tinker/report.json
+            tinker/run.log
