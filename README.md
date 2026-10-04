@@ -51,7 +51,7 @@ and it hit hard"* returns
 the API at runtime instead of trusting a hardcoded id — which is how I discovered this key serves
 **Gemma 4**, not the Gemma 3 ids I had assumed, all of which returned 404.
 
-**Honest performance:** a reply takes **40-80 seconds**, because Gemma 4 reasons before it
+**Honest performance:** a reply takes **40-110 seconds, usually over a minute**, because Gemma 4 reasons before it
 answers. The service runs on an always-on Render instance, so there is no cold start - the
 latency is the model's, not the box's. Far too slow to be a real 3am button, which is why
 the product runs a small non-reasoning model on your own device.

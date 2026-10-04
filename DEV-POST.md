@@ -58,7 +58,7 @@ That screenshot is a real reply, word for word:
 That second line is the entire design on one screen. She gets the help. He gets a signal with no
 content in it. Nobody had to decide whether to be honest.
 
-**Honest performance note:** a reply takes **40–80 seconds**, because Gemma 4 reasons before it
+**Honest performance note:** a reply takes **40–110 seconds, usually over a minute**, because Gemma 4 reasons before it
 answers. The service itself is always-on now — no cold start — but that latency is the model's,
 not the box's, and it is far too slow to be a real 3am button. Which is exactly why the path
 below runs on your own device instead.
