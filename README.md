@@ -36,6 +36,23 @@ Two backends, both **open-weight** — there is no proprietary-model path in thi
 The support policy, the privacy inversion and the refusal to log are all in
 [`agent/steady.py`](agent/steady.py) — the open pieces are what makes it work.
 
+## Live
+
+**https://steady-21e1.onrender.com** — the phone UI, deployed on Render.
+
+Verified end to end with a real request: `POST /api/steady` with the note *"walked past the shop
+and it hit hard"* returns
+
+> *"The shop brought on a strong wave. Try focusing on the feeling of your feet on the ground as
+> you keep moving. Can you name three things you see around you right now?"*
+> — answered by **`gemma-4-31b-it`** (open-weight, served through Google AI Studio)
+
+`GET /api/models` reports which open-weight Gemma ids the key can actually reach. The app asks
+the API at runtime instead of trusting a hardcoded id — which is how I discovered this key serves
+**Gemma 4**, not the Gemma 3 ids I had assumed, all of which returned 404.
+
+Free instances sleep after ~15 minutes idle, so the first click can take up to a minute to wake.
+
 ## Where the model actually runs
 
 The open-weight model is **not downloaded to the user's machine and not called through a

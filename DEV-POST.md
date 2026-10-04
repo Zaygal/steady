@@ -46,7 +46,9 @@ button is worth nothing. **Privacy wasn't the ethical tax on this project. It's 
 
 Both model paths are open-weight, and there is no proprietary-model path in the code:
 
-- **Gemma**, served through Google AI Studio — this entry also goes in the Gemma category.
+- **Gemma**, served through Google AI Studio (`gemma-4-31b-it` on the live site). The app asks
+  the API which open-weight Gemma ids the key can reach instead of trusting a hardcoded id —
+  which is how I found that this key serves Gemma 4, not the Gemma 3 ids I had assumed.
 - **A GGUF served locally by `llama.cpp`** — fully offline, no network at all.
 
 And the model does not run on anyone's laptop. It runs in **GitHub Actions**, on a clean public
@@ -62,6 +64,10 @@ Ask it for help with no model reachable and it does not improvise — it says so
 crisis pointer. I'd rather it be visibly broken than confidently wrong to someone mid-craving.
 
 ## Prize Categories
+
+**Best Use of Render — featured.** The front end is live on Render at
+**https://steady-21e1.onrender.com** — the criterion is *"host an agent's front end,"* and you can
+open it on a phone right now.
 
 **Best Use of Gemma — featured.** Steady's model is Gemma, open-weight, and there is no
 proprietary-model path anywhere in the code. It runs as an official Gemma GGUF served by
@@ -104,6 +110,24 @@ she actually said, and it stopped.
 **Every step up the ladder bought capability and sold a little accuracy — and accuracy is the only
 thing that matters here.** All four runs are public in the repo's Actions tab, failures included.
 You can watch me get it wrong, watch the model invent something, and watch me take it back out.
+
+## The live reply
+
+Right now, on the deployed site, this request:
+
+```json
+POST /api/steady  {"mode":"craving","note":"walked past the shop and it hit hard"}
+```
+
+returns this:
+
+> *"The shop brought on a strong wave. Try focusing on the feeling of your feet on the ground as
+> you keep moving. Can you name three things you see around you right now?"*
+> — **`gemma-4-31b-it`**, open-weight, via Google AI Studio.
+
+It used her word, offered one move, and asked one question. That took four models and a handful of
+bugs to reach — the scratchpad leak, the token budget the reasoning ate, and the model ids I had
+simply assumed.
 
 ## Honest limits
 
