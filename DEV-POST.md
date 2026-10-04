@@ -28,6 +28,21 @@ One screen, three buttons, sized for a phone at 3am:
 - **"I slipped"** — private. It does not report. It helps you work out what you want to say, to
   whom, and when.
 
+## See it work
+
+![Steady answering with her own words, and the signal her partner would see instead of a transcript](https://raw.githubusercontent.com/Zaygal/steady/main/docs/demo-2-reply.png)
+
+It is live at **https://steady-21e1.onrender.com**. Type something, or nothing, and tap a button.
+That screenshot is a real reply, word for word:
+
+> *"Walking past that shop is a lot to handle. Can you try to name five things you can see right
+> now to help ground yourself?"*
+>
+> — your partner would see only: *"she has gone quiet for a bit."*
+
+That second line is the entire design on one screen. She gets the help. He gets a signal with no
+content in it. Nobody had to decide whether to be honest.
+
 ## What it deliberately refuses to do
 
 **The person supporting you gets a signal, never a transcript.** If she turns it on, all I would
@@ -128,6 +143,29 @@ returns this:
 It used her word, offered one move, and asked one question. That took four models and a handful of
 bugs to reach — the scratchpad leak, the token budget the reasoning ate, and the model ids I had
 simply assumed.
+
+## Why open innovation matters here
+
+I could have built this on a proprietary model behind an API key. I didn't, and the reasons are
+specific to this problem rather than general praise for open source.
+
+**A tool about addiction has to be inspectable.** Someone is being asked to trust it in the worst
+hour of their week, so "nothing is kept" cannot be a marketing line — it has to be checkable. The
+entire policy is thirty lines in `agent/steady.py`. The model is a public GGUF. The runtime is
+`llama.cpp`. The workflow that runs it is in the repo. You can read all of it, and none of it
+required my permission.
+
+**Free matters more here than anywhere.** A person in a bad week is not going to add a
+subscription to get help at 3am. Open weights mean they can run this on hardware they already own,
+indefinitely, without a billing relationship deciding whether they deserve an answer.
+
+**Swappable means it outlives me.** The model is one environment variable. When a better small
+model lands — and it will — nobody needs my release cycle, or my continued existence, to put it
+in. That's the difference between an open project and a product I own.
+
+The process is open too. DevRelay sessions are optional, so here's the equivalent: every run of
+the agent is public in the
+[Actions tab](https://github.com/Zaygal/steady/actions) — including the four that went wrong.
 
 ## Honest limits
 
