@@ -51,13 +51,10 @@ and it hit hard"* returns
 the API at runtime instead of trusting a hardcoded id — which is how I discovered this key serves
 **Gemma 4**, not the Gemma 3 ids I had assumed, all of which returned 404.
 
-**Honest performance:** a reply takes **40-80 seconds** on this deploy, because Gemma 4 reasons
-before it answers and the free tier is a small instance. Long requests are also why a 502
-occasionally appears; the UI retries once and says so. This is far too slow to be a real 3am
-button, which is why the actual product runs a small non-reasoning model on your own device -
-the CI workflow in this repo is the reproducible proof that path works.
-
-Free instances also sleep after ~15 minutes idle, so the first click can take up to a minute to wake.
+**Honest performance:** a reply takes **40-80 seconds**, because Gemma 4 reasons before it
+answers. The service runs on an always-on Render instance, so there is no cold start - the
+latency is the model's, not the box's. Far too slow to be a real 3am button, which is why
+the product runs a small non-reasoning model on your own device.
 
 
 ## The fine-tuning experiment that failed (and is reported anyway)
