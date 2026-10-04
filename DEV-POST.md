@@ -1,6 +1,6 @@
 ---
 title: I built a panic button that doesn't tell me anything
-published: 
+published: false
 tags: devchallenge, weekendchallenge, hf26challenge
 ---
 

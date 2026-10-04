@@ -1,0 +1,52 @@
+name: dev-post
+
+# Publishes DEV-POST.md to the live dev.to article through the API, so the markdown that
+# reaches the post is byte-for-byte the markdown in this repo. Pasting it by hand through a
+# phone dropped both screenshots and mangled the em-dashes, so this exists.
+on:
+  workflow_dispatch:
+    inputs:
+      article_id:
+        description: "dev.to article id to update"
+        required: true
+      publish:
+        description: "true to publish, false to save as draft"
+        required: false
+        default: "true"
+
+jobs:
+  push-to-dev:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Refuse to run without the key
+        run: |
+          if [ -z "${{ secrets.DEV_API_KEY }}" ]; then
+            echo "DEV_API_KEY is not set on this repo. Add it under Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+
+      - name: Send this repo's post to dev.to
+        env:
+          KEY: ${{ secrets.DEV_API_KEY }}
+          ARTICLE_ID: ${{ inputs.article_id }}
+          PUBLISH: ${{ inputs.publish }}
+        run: python3 .github/dev_push.py
+
+      - name: Prove what arrived, by reading it back
+        env:
+          ARTICLE_ID: ${{ inputs.article_id }}
+        run: |
+          sleep 3
+          python3 - <<'PY'
+          import json, urllib.request, os, re
+          with urllib.request.urlopen(
+                  "https://dev.to/api/articles/" + os.environ["ARTICLE_ID"], timeout=60) as r:
+              d = json.loads(r.read())
+          h = d.get("body_html") or ""
+          print("title :", d.get("title"))
+          print("tags  :", d.get("tag_list"))
+          print("h2    :", len(re.findall(r"<h2", h, re.I)))
+          print("images:", re.findall(r'<img src="([^"]+)"', h)[:4])
+          PY
