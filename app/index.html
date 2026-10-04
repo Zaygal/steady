@@ -71,7 +71,7 @@ async function go(mode) {
   waiting();
   try {
     let { d } = await send(mode);
-    if (!d) {                                  // the free instance can 502 mid-wake
+    if (!d) {                                  // a long model call can still drop mid-flight
       out.textContent = "The agent is waking up. Trying once more\u2026";
       ({ d } = await send(mode));
     }
