@@ -85,7 +85,9 @@ def _local_chat(prompt: str, system: str) -> str:
 
 
 _PICKED = {"model": None}          # remembered for the life of the process
-_HTTP_TIMEOUT = int(os.environ.get("STEADY_TIMEOUT", "100"))
+# 180 not 100: Gemma 4 reasons before it answers, and killing a call that is about to
+# succeed just makes the person wait through a second full attempt.
+_HTTP_TIMEOUT = int(os.environ.get("STEADY_TIMEOUT", "180"))
 
 
 def _body(system: str, prompt: str, thinking_off: bool) -> bytes:
@@ -173,9 +175,10 @@ def _gemini_chat(prompt: str, system: str) -> str:
     if _PICKED["model"]:
         candidates.append(_PICKED["model"])
     candidates += [m.strip() for m in os.environ.get(
-        "STEADY_MODEL", "gemma-4-26b-a4b-it,gemma-3-27b-it").split(",") if m.strip()]
-    # A mixture-of-experts Gemma keeps the same open weights but activates ~4B instead of 31B
-    # dense, which is the difference between a 40s reply and a reply in nearly two minutes.
+        "STEADY_MODEL",
+        "gemma-4-31b-it,gemma-4-26b-a4b-it,gemma-3-27b-it").split(",") if m.strip()]
+    # 31b first on purpose: the mixture-of-experts variant never answers on this endpoint, so
+    # trying it first costs a full timeout before the model that actually replies is reached.
     text, last = _try_models(candidates, key, system, prompt)
     if text:
         return text
@@ -183,7 +186,6 @@ def _gemini_chat(prompt: str, system: str) -> str:
     # 2. ask the API what this key can actually reach
     try:
         found = [(m.get("name") or "").split("/")[-1] for m in _gemma_available(key)]
-        found.sort(key=lambda i: 0 if any(k in i.lower() for k in ("a4b", "moe", "nano", "lightning")) else 1)
     except Exception:
         found = []
     text, last2 = _try_models([f for f in found if f], key, system, prompt)

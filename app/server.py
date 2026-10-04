@@ -9,6 +9,7 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, "..", "agent"))
+import threading  # noqa: E402
 import steady  # noqa: E402
 
 # Render (and most PaaS) inject PORT. Fall back to STEADY_PORT for local runs.
@@ -59,9 +60,20 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         pass
 
 
+def _warm():
+    """One throwaway turn at boot so model discovery happens before a person taps a button."""
+    try:
+        steady.session("craving", "")
+    except Exception:
+        pass
+
+
 if __name__ == "__main__":
     socketserver.TCPServer.allow_reuse_address = True
     # threaded: a single-threaded server stalls when a phone holds a connection open
     with http.server.ThreadingHTTPServer(("", PORT), Handler) as httpd:
         print(f"Steady listening on http://0.0.0.0:{PORT}  (open that on your phone)")
+        # Without this, request #1 after every restart tries a model that never answers, times
+        # out, and retries - so the very first click was the slowest thing in the product.
+        threading.Thread(target=_warm, daemon=True).start()
         httpd.serve_forever()
