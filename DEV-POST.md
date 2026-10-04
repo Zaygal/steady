@@ -43,9 +43,16 @@ And **the slip button deliberately never reports at all** — not even a timesta
 "checked in" and "gone quiet" would start to *mean* something, and the moment a supporter can infer
 a slip from timing, the honest button is dead.
 
-**Steady keeps no session log.** Not "we don't look at it" — there is nothing to look at. A tool
-that recorded this would be used dishonestly within a week, because that is what people do when
-the record is a threat.
+**Steady keeps no session log.** Not "we don't look at it" — there is nothing to look at. No
+history, no streaks, no record of a slip, and no copy of anything she typed. The single thing
+stored anywhere is the time of her last check-in, and it exists only so that someone who loves her
+can tell she came back. A tool that recorded more would be used dishonestly within a week, because
+that is what people do when the record is a threat.
+
+**And the uncomfortable part, plainly:** on the hosted demo, what she writes *is* sent to Google's
+endpoint to be answered — it has to be, that is where the model runs. What Steady itself keeps is
+nothing. The offline path is the one where the words never leave the device at all: a GGUF through
+`llama.cpp`, on her own hardware, with no network involved.
 
 I want to be precise about why this isn't a compromise I'm grudgingly making. The whole value of
 the tool *to me* is the refusal. If she doesn't trust the button, she won't press it, and the
